@@ -2,15 +2,16 @@
 #include <avr/interrupt.h>
 #include <avr/io.h>
 #include <stdio.h>
+#include <string.h>
 
-static char* uart_tx_fifo;
-static char* uart_tx_fifo_end;
-static char* uart_rx_fifo;
-static char* uart_rx_fifo_end;
+static char* uart_tx_fifo = nullptr;
+static char* uart_tx_fifo_end = nullptr;
+static char* uart_rx_fifo = nullptr;
+static char* uart_rx_fifo_end = nullptr;
 
-static bool rx_ln = false;
+bool rx_rd = false;
 
-void init_async_uart(int baud, FILE* pstream)
+void init_async_uart (int baud)
 {
 	cli();
 	
@@ -20,48 +21,84 @@ void init_async_uart(int baud, FILE* pstream)
 	UBRR0H = (unsigned char)(ubrr>>8);
 	UBRR0L = (unsigned char)ubrr;
 	// frame configuration: one stop bit, no parity (this could be parameterized)
-	UCSROC = (1<<USBS0)
-	// rx interrupt enable, tx data register read interrupt enable, rx enable, tx enable
-	UCSR0B = (1<<RXCIE0) | (1<<UDRIE0) | (1<<RXEN0) | (1<<TXEN0);
+	// rx enable, tx enable
+	UCSR0B = (1<<RXEN0) | (1<<TXEN0);
 	
   sei();
 }
 
 void one_tx (char c)
 {
-	TXB0 = c;
+	UDR0 = c;
 }
 
 char one_rx ()
 {
-	return RXB0;
+	return UDR0;
 }
 
-
-void async_uart_puts (const char* str, int n)
-{
-	uart_tx_fifo = str;
-	uart_tx_fifo_end = str + n;
-	if (UCSR0A & (1<<UDRE0)) {
-		one_tx(str[0]);
-		uart_tx_fifo++;
-	}
+bool is_uart_sending () {
+	// For some reason, we need to read from UDRE0 in this loop otherwise
+	// the interrupt vector handler never seems to properly reset it.
+	char chh = (UCSR0A & (1 << UDRE0));
+	return (uart_tx_fifo < uart_tx_fifo_end);
 }
 
+bool is_uart_receiving () {
+	return uart_rx_fifo < uart_rx_fifo_end;
+}
 
-void async_uart_gets (const char* fifo, int n)
+bool is_uart_recv_ready () {
+	return rx_rd;
+}
+
+void wait_uart_send_ready()
 {
-	uart_rx_fifo = fifo;
-	uart_rx_fifo_end = fifo + n;
-	rx_ln = false;
+	bool led = true;
+	while (is_uart_sending());
+}
+
+void wait_uart_recv_ready()
+{
+	while (is_uart_receiving() && rx_rd) {}
+}
+
+void async_uart_puts (char* buf, int n)
+{
+	uart_tx_fifo = buf;
+	uart_tx_fifo_end = buf + strlen(buf);
+	UCSR0B |= (1<<UDRIE0);
+}
+
+void async_uart_gets (char* buf, int n)
+{
+	uart_rx_fifo = buf;
+	uart_rx_fifo_end = buf + n;
+	rx_rd = false;
+	UCSR0B |= (1<<RXCIE0);
 }
 
 ISR(USART_UDRE_vect)
 {
-	one_tx(*uart_tx_fifo++);
+	char c = 0;
+	if (uart_tx_fifo < uart_tx_fifo_end) {
+		c = *uart_tx_fifo++;
+		UDR0 = c;
+	} else {
+		UCSR0B &= ~(1<<UDRIE0);
+	}
 }
 
 ISR(USART_RX_vect)
 {
-	
+	char c = 0;
+	c = UDR0;
+	if (uart_rx_fifo < uart_rx_fifo_end && c != 0) {
+		*(uart_rx_fifo++) = c;
+		rx_rd = (c != '\n');
+	}
+	if (c==0 || !rx_rd) {
+		UCSR0B &= ~(1<<RXCIE0);
+	}
 }
+
