@@ -1,17 +1,18 @@
 # async-uart.c
 
-A little library that allows for asynchronous serial communication over an atmel chip's TX0/RX0 uart interface.
+A little module that provides asynchronous serial i/o over an atmel chip's USART device.
 
-This has been tested with an ATmega168 chip on an Arduino Pro Mini 3v3 clone.
+This is tested with an ATmega168 chip on an Arduino Pro Mini 3v3 clone.
 
-Note that the inclusion of the library implies ISR vector handlers for UDRE_vect and RX_vect.
+Note that using the module implies ISR vector handlers for UDRE_vect and RX_vect.
 
 # Usage
 
 Usage is simple: call async_uart_puts() and/or async_uart_gets().
 
-Each of these methods asks for a character buffer and works asynchronously with that.
-When you need to block waiting for a result, call wait_uart_send_ready() or wait_uart_recv_ready().
+Each of these methods asks for a character buffer that they perform asynchronous i/o with.
+When you need to block on the result, call wait_uart_send_ready() or wait_uart_recv_ready(),
+  or you can poll with is_uart_sending() and is_uart_recv_ready().
 After the wait function returns, you can call the async function again.
 
 The gets/recv version will place characters in a buffer you provide, up until CR,LF,or EOF.

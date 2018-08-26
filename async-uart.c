@@ -26,7 +26,7 @@ void init_async_uart (int baud)
   sei();
 }
 
-char is_uart_sending () {
+char is_uart_send_ready () {
 	// For some reason, we need to read from UDRE0 in this loop otherwise
 	// the interrupt vector handler never seems to properly reset it.
 	char chh = (UCSR0A & (1 << UDRE0));
@@ -39,7 +39,7 @@ char is_uart_receiving () {
 
 void wait_uart_send_ready()
 {
-	while (is_uart_sending());
+	while (is_uart_send_ready());
 }
 
 void wait_uart_recv_ready()
@@ -73,22 +73,11 @@ ISR(USART_UDRE_vect)
 	}
 }
 
-//static char fl = 0;
-
 ISR(USART_RX_vect)
 {
 	char c = 0;
 	c = UDR0;
-	/* 
-  debugging code - makes led toggle while receiving characters
-	
-	fl = !fl;
-	if (fl) {
-		PORTB |= (1<<PORTB5);
-	} else {
-		PORTB &= ~(1<<PORTB5);
-	}
-	*/
+
 	if (c != 0 && uart_rx_fifo < (uart_rx_fifo_end-1)) {
 		*uart_rx_fifo++ = c;
 		rx_rd = (c == '\n' || c == '\r');
