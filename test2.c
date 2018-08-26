@@ -14,8 +14,6 @@ int main ()
 	char bufr2[64] = "test";
 	bufr[0] = 0;
 
-	DDRB |= (1<<DDB5);
-
 	snprintf(bufr, 64, "Ok, let's play Simon says:\r\n");
 	async_uart_puts(bufr,strlen(bufr));
 	wait_uart_send_ready();

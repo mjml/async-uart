@@ -83,18 +83,22 @@ ISR(USART_UDRE_vect)
 	}
 }
 
-static char fl = 0;
+//static char fl = 0;
 
 ISR(USART_RX_vect)
 {
 	char c = 0;
 	c = UDR0;
+	/* 
+  debugging code - makes led toggle while receiving characters
+	
 	fl = !fl;
 	if (fl) {
 		PORTB |= (1<<PORTB5);
 	} else {
 		PORTB &= ~(1<<PORTB5);
 	}
+	*/
 	if (c != 0 && uart_rx_fifo < (uart_rx_fifo_end-1)) {
 		*uart_rx_fifo++ = c;
 		rx_rd = (c == '\n' || c == '\r');
