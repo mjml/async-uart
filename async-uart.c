@@ -26,12 +26,12 @@ void init_async_uart (int baud)
   sei();
 }
 
-void one_tx (char c)
+inline void one_tx (char c)
 {
 	UDR0 = c;
 }
 
-char one_rx ()
+inline char one_rx ()
 {
 	return UDR0;
 }
@@ -77,7 +77,7 @@ ISR(USART_UDRE_vect)
 	char c = 0;
 	if (uart_tx_fifo < uart_tx_fifo_end) {
 		c = *uart_tx_fifo++;
-		UDR0 = c;
+		one_rx();
 	} else {
 		UCSR0B &= ~(1<<UDRIE0);
 	}
@@ -88,7 +88,7 @@ ISR(USART_UDRE_vect)
 ISR(USART_RX_vect)
 {
 	char c = 0;
-	c = UDR0;
+	one_tx();
 	/* 
   debugging code - makes led toggle while receiving characters
 	
