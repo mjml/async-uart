@@ -1,6 +1,6 @@
 CC=avr-gcc
 OBJCOPY=avr-objcopy
-CCPARAMS=-O1 -DF_CPU=8000000L -mmcu=atmega168p -c -Iavr-softuart
+CCPARAMS=-O2 -DF_CPU=8000000L -mmcu=atmega168p -c -Iavr-softuart
 DUDE=avrdude
 RM=rm
 
