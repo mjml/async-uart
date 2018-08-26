@@ -12,7 +12,7 @@ Usage is simple: call async_uart_puts() and/or async_uart_gets().
 
 Each of these methods asks for a character buffer that they perform asynchronous i/o with.
 When you need to block on the result, call wait_uart_send_ready() or wait_uart_recv_ready(),
-  or you can poll with is_uart_sending() and is_uart_recv_ready().
+  or you can poll with is_uart_send_ready() and is_uart_recv_ready().
 After the wait function returns, you can call the async function again.
 
 The gets/recv version will place characters in a buffer you provide, up until CR,LF,or EOF.
