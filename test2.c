@@ -19,12 +19,13 @@ int main ()
 	snprintf(bufr, 64, "Ok, let's play Simon says:\r\n");
 	async_uart_puts(bufr,strlen(bufr));
 	wait_uart_send_ready();
-
+	
 	while (1) {
 		bufr2[0] = 0;
 		async_uart_gets(bufr2,64);
 		wait_uart_recv_ready();
-		bufr2[strlen(bufr2)-1] = 0;
+		int n = strlen(bufr2);
+		if (bufr2[n-1] == '\r') bufr2[n-1] = 0;
 
 		snprintf(bufr, 64, "Simon says [%s]\r\n", bufr2);
 		async_uart_puts(bufr,strlen(bufr));
