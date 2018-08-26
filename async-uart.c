@@ -4,12 +4,11 @@
 #include <stdio.h>
 #include <string.h>
 
-static char* uart_tx_fifo = nullptr;
-static char* uart_tx_fifo_end = nullptr;
-static char* uart_rx_fifo = nullptr;
-static char* uart_rx_fifo_end = nullptr;
-
-bool rx_rd = false;
+static volatile char* uart_tx_fifo = NULL;
+static volatile char* uart_tx_fifo_end = NULL;
+static volatile char* uart_rx_fifo = NULL;
+static volatile char* uart_rx_fifo_end = NULL;
+static volatile char rx_rd = 1;
 
 void init_async_uart (int baud)
 {
@@ -37,36 +36,31 @@ char one_rx ()
 	return UDR0;
 }
 
-bool is_uart_sending () {
+char is_uart_sending () {
 	// For some reason, we need to read from UDRE0 in this loop otherwise
 	// the interrupt vector handler never seems to properly reset it.
 	char chh = (UCSR0A & (1 << UDRE0));
 	return (uart_tx_fifo < uart_tx_fifo_end);
 }
 
-bool is_uart_receiving () {
-	return uart_rx_fifo < uart_rx_fifo_end;
-}
-
-bool is_uart_recv_ready () {
-	return rx_rd;
+char is_uart_receiving () {
+	return uart_rx_fifo < (uart_rx_fifo_end-1);
 }
 
 void wait_uart_send_ready()
 {
-	bool led = true;
 	while (is_uart_sending());
 }
 
 void wait_uart_recv_ready()
 {
-	while (is_uart_receiving() && rx_rd) {}
+	while (is_uart_receiving() && rx_rd==0) {}
 }
 
 void async_uart_puts (char* buf, int n)
 {
 	uart_tx_fifo = buf;
-	uart_tx_fifo_end = buf + strlen(buf);
+	uart_tx_fifo_end = buf + n;
 	UCSR0B |= (1<<UDRIE0);
 }
 
@@ -74,7 +68,7 @@ void async_uart_gets (char* buf, int n)
 {
 	uart_rx_fifo = buf;
 	uart_rx_fifo_end = buf + n;
-	rx_rd = false;
+	rx_rd = 0;
 	UCSR0B |= (1<<RXCIE0);
 }
 
@@ -89,15 +83,25 @@ ISR(USART_UDRE_vect)
 	}
 }
 
+static char fl = 0;
+
 ISR(USART_RX_vect)
 {
 	char c = 0;
 	c = UDR0;
-	if (uart_rx_fifo < uart_rx_fifo_end && c != 0) {
-		*(uart_rx_fifo++) = c;
-		rx_rd = (c != '\n');
+	fl = !fl;
+	if (fl) {
+		PORTB |= (1<<PORTB5);
+	} else {
+		PORTB &= ~(1<<PORTB5);
 	}
-	if (c==0 || !rx_rd) {
+	if (c != 0 && uart_rx_fifo < (uart_rx_fifo_end-1)) {
+		*uart_rx_fifo++ = c;
+		rx_rd = (c == '\n' || c == '\r');
+	}
+	if (c==0 || rx_rd || uart_rx_fifo >= uart_rx_fifo_end-1) {
+		*uart_rx_fifo = (char)0;
+		rx_rd = 1;
 		UCSR0B &= ~(1<<RXCIE0);
 	}
 }
