@@ -19,9 +19,9 @@ The gets/recv version will place characters in a buffer you provide, up until CR
 The resulting string will contain the CR or LF char, and will be null-terminated.
 So if you provide a buffer of length 128, the most you get is a string of length 127.
 
-If you want different terminators, you really have to just go in and alter the interrupt service routine
-  by hand and have it respond to those, sorry -- this was sufficient for my purposes and I don't want
-	to make it more general than it needs to be.
+If you want different terminators, you have to just go and alter the interrupt service routine
+  by hand and have it respond to those.
+Sorry! This was sufficient for my purposes and I didn't want	to make it more general than it needs to be.
 
 # Examples
 
