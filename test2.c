@@ -14,10 +14,14 @@ int main ()
 	char bufr2[64] = "test";
 	bufr[0] = 0;
 
-	snprintf(bufr, 64, "Ok, let's play Simon says:\r\n");
+	snprintf(bufr, 64, "Ok, let's play\r\n");
 	async_uart_puts(bufr,strlen(bufr));
 	wait_uart_send_ready();
-	
+
+	snprintf(bufr, 64, "Simon says:\r\n");
+	async_uart_puts(bufr,strlen(bufr));
+	wait_uart_send_ready();
+
 	while (1) {
 		bufr2[0] = 0;
 		async_uart_gets(bufr2,64);

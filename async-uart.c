@@ -2,18 +2,16 @@
 #include <avr/interrupt.h>
 #include <avr/io.h>
 #include <stdio.h>
-#include <string.h>
 
-static volatile char* uart_tx_fifo = NULL;
-static volatile char* uart_tx_fifo_end = NULL;
-static volatile char* uart_rx_fifo = NULL;
-static volatile char* uart_rx_fifo_end = NULL;
-static volatile char rx_rd = 1;
+volatile char* uart_tx_fifo = NULL;
+volatile char* uart_tx_fifo_end = NULL;
+volatile char* uart_rx_fifo = NULL;
+volatile char* uart_rx_fifo_end = NULL;
+volatile char rx_rd = 1;
 
 void init_async_uart (int baud)
 {
 	cli();
-	
 	unsigned int ubrr = (F_CPU / 16 / baud) - 1;
 	
 	// baud rate selector
@@ -22,14 +20,10 @@ void init_async_uart (int baud)
 	// frame configuration: one stop bit, no parity (this could be parameterized)
 	// rx enable, tx enable
 	UCSR0B = (1<<RXEN0) | (1<<TXEN0);
-	
-  sei();
+	sei();
 }
 
 char is_uart_send_ready () {
-	// For some reason, we need to read from UDRE0 in this loop otherwise
-	// the interrupt vector handler never seems to properly reset it.
-	char chh = (UCSR0A & (1 << UDRE0));
 	return (uart_tx_fifo < uart_tx_fifo_end);
 }
 
@@ -39,7 +33,10 @@ char is_uart_receiving () {
 
 void wait_uart_send_ready()
 {
-	while (is_uart_send_ready());
+	while (is_uart_send_ready()) {
+		// For some reason, we need one instruction in this loop or it never terminates.
+		asm ("	nop; ");
+	}
 }
 
 void wait_uart_recv_ready()
