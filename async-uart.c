@@ -39,12 +39,16 @@ char is_uart_receiving () {
 
 void wait_uart_send_ready()
 {
-	while (is_uart_send_ready());
+	while (is_uart_send_ready()) {
+		asm("nop;");
+	}
 }
 
 void wait_uart_recv_ready()
 {
-	while (is_uart_receiving() && rx_rd==0) {}
+	while (is_uart_receiving() && rx_rd==0) {
+		asm("nop;");
+	}
 }
 
 void async_uart_puts (char* buf, int n)
